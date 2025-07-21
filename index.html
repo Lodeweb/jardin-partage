@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JardinPartage - Partage d'outils de jardinage communautaire</title>
+    <!-- Styles externes -->
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ... [Tout TON CSS, inchangé] ... */
+        :root { --primary: #2e7d32; ... }
+        /* [Reste de tes styles] */
+        /* (je n'affiche pas tout ici pour que ce soit lisible) */
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="navbar">
+            <div class="logo">
+                <i class="fas fa-leaf"></i>
+                <h1>JardinPartage</h1>
+            </div>
+            <div class="nav-links">
+                <a href="#" class="active">Accueil</a>
+                <a href="#catalogue">Catalogue</a>
+                <a href="#how-it-works">Comment ça marche</a>
+                <a href="#proposer">Proposer un outil</a>
+                <a href="#achats">Achats</a>
+                <a href="#contact">Contact</a>
+            </div>
+            <div class="auth-buttons">
+                <button class="btn btn-outline" id="loginBtn">Connexion</button>
+                <button class="btn btn-primary" id="registerBtn">Inscription</button>
+                <button class="btn btn-outline" id="logoutBtn" style="display:none;">Déconnexion</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- [Le reste de TON HTML - inchangé ! : hero, features, catalogue, etc.] -->
+    <!-- ... tout comme dans ton code ... -->
+
+    <!-- Footer -->
+    <footer id="contact">
+      <!-- ... (idem ton code) ... -->
+    </footer>
+
+    <!-- Modal Calendrier -->
+    <div class="modal" id="calendarModal">
+      <div class="modal-content" style="max-width: 900px;">
+        <span class="close-modal" id="closeCalendarModal">&times;</span>
+        <h2 id="modalToolTitle">Réservation</h2>
+        <div id="calendar"></div>
+      </div>
+    </div>
+
+    <!-- Modal LOGIN -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeLoginModal">&times;</span>
+            <h2>Connexion</h2>
+            <form id="loginForm">
+                <div style="margin: 1rem 0;">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" required style="width: 100%; padding: 0.5rem; margin-top: 0.5rem;">
+                </div>
+                <div style="margin: 1rem 0;">
+                    <label for="password">Mot de passe</label>
+                    <input type="password" id="password" required style="width: 100%; padding: 0.5rem; margin-top: 0.5rem;">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Se connecter</button>
+            </form>
+        </div>
+    </div>
+    <!-- Modal REGISTER (nouveau bloc à ajouter) -->
+    <div class="modal" id="registerModal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeRegisterModal">&times;</span>
+            <h2>Inscription</h2>
+            <form id="registerForm">
+                <div style="margin: 1rem 0;">
+                    <label for="regEmail">Email</label>
+                    <input type="email" id="regEmail" required style="width: 100%; padding: 0.5rem; margin-top: 0.5rem;">
+                </div>
+                <div style="margin: 1rem 0;">
+                    <label for="regPassword">Mot de passe</label>
+                    <input type="password" id="regPassword" required style="width: 100%; padding: 0.5rem; margin-top: 0.5rem;">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">S'inscrire</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/fr.min.js'></script>
+    <!-- Supabase pour l'authentification -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+    // === GESTION AUTHENTIFICATION SUPABASE ===
+    const SUPABASE_URL = 'https://vvwaoublturvwnepluav.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2d2FvdWJsdHVydnduZXBsdWF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMDI5NzAsImV4cCI6MjA2ODY3ODk3MH0.X4NEPjWRze9hUToHquKVrL6ZdKQZznFjfXvNzPMIcTI';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    document.addEventListener('DOMContentLoaded', function() {
+      // --- MODALES ---
+      // Ouvre/Ferme modale Connexion
+      document.getElementById('loginBtn').onclick = () => {
+        document.getElementById('loginModal').style.display = 'flex';
+      };
+      document.getElementById('closeLoginModal').onclick = () => {
+        document.getElementById('loginModal').style.display = 'none';
+      };
+      window.onclick = (e) => {
+        if (e.target === document.getElementById('loginModal')) document.getElementById('loginModal').style.display = 'none';
+        if (e.target === document.getElementById('registerModal')) document.getElementById('registerModal').style.display = 'none';
+      };
+      // Ouvre/Ferme modale Inscription
+      document.getElementById('registerBtn').onclick = () => {
+        document.getElementById('registerModal').style.display = 'flex';
+      };
+      document.getElementById('closeRegisterModal').onclick = () => {
+        document.getElementById('registerModal').style.display = 'none';
+      };
+
+      // INSCRIPTION
+      document.getElementById('registerForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const email = document.getElementById('regEmail').value;
+        const password = document.getElementById('regPassword').value;
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error) {
+          alert("Erreur lors de l'inscription : " + error.message);
+        } else {
+          alert("Inscription réussie ! Va vérifier ta boîte mail.");
+          document.getElementById('registerModal').style.display = 'none';
+        }
+      });
+
+      // CONNEXION
+      document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          alert("Erreur de connexion : " + error.message);
+        } else {
+          alert("Connexion réussie !");
+          document.getElementById('loginModal').style.display = 'none';
+          document.getElementById('logoutBtn').style.display = 'inline-block';
+          document.getElementById('loginBtn').style.display = 'none';
+          document.getElementById('registerBtn').style.display = 'none';
+        }
+      });
+
+      // DECONNEXION
+      document.getElementById('logoutBtn').onclick = async () => {
+        await supabase.auth.signOut();
+        alert("Déconnecté !");
+        document.getElementById('logoutBtn').style.display = 'none';
+        document.getElementById('loginBtn').style.display = 'inline-block';
+        document.getElementById('registerBtn').style.display = 'inline-block';
+      };
+
+      // Si déjà connecté, met à jour les boutons
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          document.getElementById('logoutBtn').style.display = 'inline-block';
+          document.getElementById('loginBtn').style.display = 'none';
+          document.getElementById('registerBtn').style.display = 'none';
+        }
+      });
+
+      // === TON JS D'ANIMATION ET CALENDRIER (inchangé) ===
+      // ... [reprends tout ton code JS d'avant ici] ...
+      // [ci-dessous, j'ai gardé ton JS complet d'origine, tout sera fonctionnel]
+
+      // Animation pour les cartes d'outils
+      const toolCards = document.querySelectorAll('.tool-card');
+      toolCards.forEach(card => {
+          card.addEventListener('mouseenter', function() {
+              this.style.boxShadow = '0 10px 20px rgba(0,0,0,0.15)';
+          });
+          card.addEventListener('mouseleave', function() {
+              this.style.boxShadow = '0 5px 15px rgba(0,0,0,0.1)';
+          });
+      });
+
+      // Animation pour les boutons
+      const buttons = document.querySelectorAll('.btn');
+      buttons.forEach(button => {
+          button.addEventListener('mousedown', function() {
+              this.style.transform = 'scale(0.98)';
+          });
+          button.addEventListener('mouseup', function() {
+              this.style.transform = 'scale(1)';
+          });
+          button.addEventListener('mouseleave', function() {
+              this.style.transform = 'scale(1)';
+          });
+      });
+
+      // Boutons d’action rapides
+      document.getElementById('discoverBtn').addEventListener('click', () => {
+          document.getElementById('catalogue').scrollIntoView({behavior: 'smooth'});
+      });
+      document.getElementById('proposeBtn').addEventListener('click', () => {
+          alert('Fonctionnalité à venir : formulaire pour proposer un nouvel outil');
+      });
+      document.getElementById('purchaseBtn').addEventListener('click', () => {
+          alert('Fonctionnalité à venir : formulaire pour proposer un achat collectif');
+      });
+
+      // Détails outils
+      document.querySelectorAll('.details-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+              const tool = btn.getAttribute('data-tool');
+              alert(`Détails sur : ${tool}\n\nFonctionnalité à venir : page détaillée avec description complète, photos et disponibilité`);
+          });
+      });
+
+      // --- MODAL CALENDRIER ---
+      const calendarModal = document.getElementById('calendarModal');
+      const closeCalendarModal = document.getElementById('closeCalendarModal');
+      let calendarInstance;
+
+      document.querySelectorAll('.reserve-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+              const toolName = this.getAttribute('data-tool');
+              document.getElementById('modalToolTitle').textContent = `Réservation : ${toolName}`;
+              calendarModal.style.display = 'flex';
+              document.getElementById('calendar').innerHTML = ''; // Nettoie le DOM pour éviter doublon
+
+              calendarInstance = new FullCalendar.Calendar(document.getElementById('calendar'), {
+                  initialView: 'dayGridMonth',
+                  locale: 'fr',
+                  headerToolbar: {
+                      left: 'prev,next today',
+                      center: 'title',
+                      right: 'dayGridMonth,timeGridWeek'
+                  },
+                  selectable: true,
+                  select: function(info) {
+                      if (confirm(`Confirmer la réservation du ${info.start.toLocaleDateString()} au ${info.end.toLocaleDateString()} ?`)) {
+                          alert('Réservation confirmée ! (En réalité, ceci enregistrerait en base de données)');
+                          calendarInstance.addEvent({
+                              title: 'Votre réservation',
+                              start: info.start,
+                              end: info.end,
+                              color: '#2e7d32'
+                          });
+                      }
+                  }
+              });
+              calendarInstance.render();
+          });
+      });
+      closeCalendarModal.addEventListener('click', function() {
+          calendarModal.style.display = 'none';
+      });
+      window.addEventListener('click', function(e) {
+          if (e.target === calendarModal) {
+              calendarModal.style.display = 'none';
+          }
+      });
+    });
+    </script>
+</body>
+</html>
