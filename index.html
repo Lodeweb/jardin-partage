@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JardinPartage - Partage d'outils de jardinage communautaire</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      background: #f5f5f5;
+      color: #222;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    header {
+      background: #fff;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .nav-links {
+      display: flex;
+      gap: 1.5rem;
+    }
+    .auth-buttons {
+      display: flex;
+      gap: 1rem;
+    }
+    .btn {
+      padding: 0.4rem 1.1rem;
+      border-radius: 50px;
+      border: none;
+      background: #2e7d32;
+      color: white;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-outline {
+      background: transparent;
+      color: #2e7d32;
+      border: 1.5px solid #2e7d32;
+    }
+    .btn-outline:hover, .btn-primary:hover {
+      background: #005005;
+      color: #fff;
+    }
+    .btn-primary {
+      background: #2e7d32;
+      color: #fff;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      top: 0; left: 0; right:0; bottom:0;
+      background: rgba(0,0,0,0.4);
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: #fff;
+      border-radius: 10px;
+      padding: 2rem;
+      max-width: 370px;
+      width: 90%;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.18);
+      position: relative;
+    }
+    .close-modal {
+      position: absolute;
+      top: 12px;
+      right: 15px;
+      font-size: 1.4rem;
+      cursor: pointer;
+      color: #999;
+    }
+    .modal-content h2 {
+      text-align: center;
+      margin-bottom: 1.2rem;
+    }
+    .modal-content label {
+      font-weight: 500;
+      font-size: 1rem;
+    }
+    .modal-content input {
+      margin: 0.5rem 0 1rem 0;
+      padding: 0.6rem 0.8rem;
+      width: 100%;
+      border-radius: 7px;
+      border: 1px solid #ccc;
+    }
+    .modal-content button {
+      width: 100%;
+      margin-top: 0.7rem;
+    }
+    main {
+      padding: 2rem 5vw;
+    }
+    footer {
+      background: #2e7d32;
+      color: #fff;
+      text-align: center;
+      padding: 2rem 1rem 1rem 1rem;
+      margin-top: 4rem;
+    }
+    @media (max-width: 600px) {
+      header { flex-direction: column; gap: 1rem; }
+      main { padding: 1rem 2vw; }
+    }
+  </style>
+</head>
+<body>
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <i class="fas fa-leaf" style="color:#2e7d32;font-size:2rem;"></i>
+      <span style="font-size:1.5rem;font-weight:700;color:#2e7d32;">JardinPartage</span>
+    </div>
+    <nav class="nav-links">
+      <a href="#">Accueil</a>
+      <a href="#">Catalogue</a>
+      <a href="#">Comment ça marche</a>
+      <a href="#">Contact</a>
+    </nav>
+    <div class="auth-buttons">
+      <button class="btn btn-outline" id="loginBtn">Connexion</button>
+      <button class="btn btn-primary" id="registerBtn">Inscription</button>
+      <button class="btn btn-outline" id="logoutBtn" style="display:none;">Déconnexion</button>
+    </div>
+  </header>
+
+  <!-- CONTENU PRINCIPAL (exemple, à personnaliser plus tard) -->
+  <main>
+    <h1>Bienvenue sur JardinPartage !</h1>
+    <p>Partagez, empruntez ou mutualisez vos outils de jardin avec votre communauté.</p>
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>&copy; 2023 JardinPartage. Tous droits réservés.</p>
+  </footer>
+
+  <!-- Modale INSCRIPTION -->
+  <div class="modal" id="registerModal">
+    <div class="modal-content">
+      <span class="close-modal" id="closeRegisterModal">&times;</span>
+      <h2>Inscription</h2>
+      <form id="registerForm">
+        <div>
+          <label for="regEmail">Email</label>
+          <input type="email" id="regEmail" required>
+        </div>
+        <div>
+          <label for="regPassword">Mot de passe</label>
+          <input type="password" id="regPassword" required>
+        </div>
+        <button type="submit" class="btn btn-primary">S'inscrire</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modale CONNEXION -->
+  <div class="modal" id="loginModal">
+    <div class="modal-content">
+      <span class="close-modal" id="closeLoginModal">&times;</span>
+      <h2>Connexion</h2>
+      <form id="loginForm">
+        <div>
+          <label for="email">Email</label>
+          <input type="email" id="email" required>
+        </div>
+        <div>
+          <label for="password">Mot de passe</label>
+          <input type="password" id="password" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Se connecter</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- SUPABASE JS & AUTHENTIFICATION -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://vvwaoublturvwnepluav.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2d2FvdWJsdHVydnduZXBsdWF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMDI5NzAsImV4cCI6MjA2ODY3ODk3MH0.X4NEPjWRze9hUToHquKVrL6ZdKQZznFjfXvNzPMIcTI';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    document.addEventListener('DOMContentLoaded', function() {
+      // Ouvre/Ferme les modales
+      document.getElementById('loginBtn').onclick = () => document.getElementById('loginModal').style.display = 'flex';
+      document.getElementById('registerBtn').onclick = () => document.getElementById('registerModal').style.display = 'flex';
+      document.getElementById('closeLoginModal').onclick = () => document.getElementById('loginModal').style.display = 'none';
+      document.getElementById('closeRegisterModal').onclick = () => document.getElementById('registerModal').style.display = 'none';
+      window.onclick = (e) => {
+        if (e.target === document.getElementById('loginModal')) document.getElementById('loginModal').style.display = 'none';
+        if (e.target === document.getElementById('registerModal')) document.getElementById('registerModal').style.display = 'none';
+      };
+
+      // INSCRIPTION
+      document.getElementById('registerForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const email = document.getElementById('regEmail').value;
+        const password = document.getElementById('regPassword').value;
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error) {
+          alert("Erreur lors de l'inscription : " + error.message);
+        } else {
+          alert("Inscription réussie ! Va vérifier ta boîte mail.");
+          document.getElementById('registerModal').style.display = 'none';
+        }
+      });
+
+      // CONNEXION
+      document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          alert("Erreur de connexion : " + error.message);
+        } else {
+          alert("Connexion réussie !");
+          document.getElementById('loginModal').style.display = 'none';
+          document.getElementById('logoutBtn').style.display = 'inline-block';
+          document.getElementById('loginBtn').style.display = 'none';
+          document.getElementById('registerBtn').style.display = 'none';
+        }
+      });
+
+      // DECONNEXION
+      document.getElementById('logoutBtn').onclick = async () => {
+        await supabase.auth.signOut();
+        alert("Déconnecté !");
+        document.getElementById('logoutBtn').style.display = 'none';
+        document.getElementById('loginBtn').style.display = 'inline-block';
+        document.getElementById('registerBtn').style.display = 'inline-block';
+      };
+
+      // Si l’utilisateur est déjà connecté au chargement
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          document.getElementById('logoutBtn').style.display = 'inline-block';
+          document.getElementById('loginBtn').style.display = 'none';
+          document.getElementById('registerBtn').style.display = 'none';
+        }
+      });
+    });
+  </script>
+</body>
+</html>
