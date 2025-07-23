@@ -1,0 +1,72 @@
+    document.body.addEventListener('click', function(e) {
+        if (e.target.classList.contains('reserve-btn')) {
+            const outilId = e.target.getAttribute('data-id');
+            document.getElementById('resOutilId').value = outilId;
+            reservationModal.style.display = 'flex';
+        }
+    });
+    closeReservationModal.onclick = function() {
+        reservationModal.style.display = 'none';
+    };
+    window.addEventListener('click', function(e) {
+        if (e.target === reservationModal) reservationModal.style.display = 'none';
+    });
+    document.getElementById('reservationForm').onsubmit = async function(e) {
+        e.preventDefault();
+        const utilisateur = document.getElementById('resName').value;
+        const date_debut = document.getElementById('resDateDebut').value;
+        const date_fin = document.getElementById('resDateFin').value;
+        const outil_id = document.getElementById('resOutilId').value;
+        if (!date_debut || !date_fin) {
+            alert("Merci de renseigner toutes les dates.");
+            return;
+        }
+        const { error } = await supabase
+            .from('reservations')
+            .insert([{
+                outil_id, utilisateur_email: utilisateur,
+                date_debut, date_fin, statut: "en_attente"
+            }]);
+        if (error) {
+            alert("Erreur lors de la réservation : " + error.message);
+        } else {
+            alert("Réservation envoyée ! Le propriétaire validera ou refusera.");
+            reservationModal.style.display = "none";
+        }
+    };
+
+    // ------------- DETAILS MODAL ----------------
+    const detailsModal = document.getElementById('detailsModal');
+    const closeDetailsModal = document.getElementById('closeDetailsModal');
+    closeDetailsModal.onclick = () => detailsModal.style.display = "none";
+    window.addEventListener('click', (e) => {
+        if(e.target === detailsModal) detailsModal.style.display = "none";
+    });
+    document.body.addEventListener('click', async function(e) {
+        if (e.target.classList.contains('details-btn')) {
+            const outilId = e.target.getAttribute('data-id');
+            const { data, error } = await supabase.from('outils').select('*').eq('id', outilId).single();
+            if (error || !data) {
+                alert('Erreur de chargement du détail.');
+                return;
+            }
+            document.getElementById('detailsContent').innerHTML = `
+                <h2>${data.nom}</h2>
+                <p><b>Description :</b> ${data.description}</p>
+                <p><b>Localisation :</b> ${data.localisation || ''}</p>
+                <p><b>Propriétaire :</b> ${data.proprietaire || ''}</p>
+                <p><b>Disponibilité :</b> ${data.disponible !== false ? "Disponible" : "Indisponible"}</p>
+            `;
+            detailsModal.style.display = "flex";
+        }
+    });
+
+    // Achat collectif (bouton inactif temporairement)
+    document.getElementById('purchaseBtn').addEventListener('click', () => {
+        alert('Fonctionnalité à venir : proposer un achat collectif.');
+    });
+
+    // Chargement initial du catalogue dynamique
+    chargerCatalogue();
+});
+</script>
