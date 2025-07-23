@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>JardinPartage - Outils communautaires</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- FontAwesome pour les icônes -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root { --primary: #2e7d32; --primary-light: #60ad5e; --primary-dark: #005005; --secondary: #ff9800;
+      --light: #f5f5f5; --dark: #333; --gray: #757575; --light-gray: #e0e0e0;}
+    body {background: #f8f9fa; color: var(--dark); margin:0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;}
+    header {background: white; box-shadow: 0 2px 10px #0001; position: sticky; top: 0; z-index: 100;}
+    .navbar { display: flex; justify-content: space-between; align-items: center; padding: 1rem 5%; max-width: 1400px; margin: 0 auto;}
+    .logo { display: flex; align-items: center; gap: 10px;}
+    .logo i { font-size: 2rem; color: var(--primary);}
+    .logo h1 { font-size: 1.8rem; color: var(--primary); font-weight: 700;}
+    .nav-links { display: flex; gap: 2rem;}
+    .nav-links a { text-decoration: none; color: var(--dark); font-weight: 500; transition: color 0.3s;}
+    .nav-links a:hover, .nav-links a.active { color: var(--primary);}
+    .auth-buttons { display: flex; gap: 1rem;}
+    .btn { padding: 0.6rem 1.5rem; border-radius: 50px; font-weight: 600; cursor: pointer; transition: all 0.3s; border: none;}
+    .btn-primary { background-color: var(--primary); color: white;}
+    .btn-primary:hover { background-color: var(--primary-dark);}
+    .btn-outline { background-color: transparent; border: 2px solid var(--primary); color: var(--primary);}
+    .btn-outline:hover { background-color: var(--primary); color: white;}
+    .btn-secondary { background-color: var(--secondary); color: white;}
+    .btn-secondary:hover { background-color: #e65100;}
+    .hero { background: var(--primary-dark); color: white; text-align: center; padding: 6rem 2rem;}
+    .hero-content { max-width: 800px; margin: 0 auto;}
+    .hero h2 { font-size: 3rem; margin-bottom: 1.5rem;}
+    .hero p { font-size: 1.2rem; margin-bottom: 2rem;}
+    .catalogue { padding: 4rem 5%; background-color: #f8f9fa;}
+    .section-title { text-align: center; margin-bottom: 2rem;}
+    .tools-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px,1fr)); gap:2rem; max-width:1200px; margin:0 auto;}
+    .tool-card { background:white; border-radius:10px; box-shadow:0 5px 15px rgba(0,0,0,0.08); transition:box-shadow .3s; overflow:hidden;}
+    .tool-card:hover { box-shadow:0 10px 24px rgba(0,0,0,0.15);}
+    .tool-image {height:170px; display:flex; align-items:center; justify-content:center; background:var(--light-gray);}
+    .tool-image i {font-size:3rem; color:var(--primary);}
+    .tool-info {padding:1.2rem;}
+    .tool-info h3 {margin:0 0 0.6rem 0;}
+    .tool-meta { font-size:0.95em; color:var(--gray); margin-bottom:8px;}
+    .availability { display:inline-block; font-size:0.9rem; margin-bottom: 8px;}
+    .available { color:var(--primary);}
+    .unavailable { color:#c62828;}
+    .tool-actions {display:flex; gap:0.8rem; margin-top: 1rem;}
+    .modal { display:none; position:fixed; left:0; top:0; width:100vw; height:100vh; background:#0007;
+      align-items:center; justify-content:center; z-index:1000;}
+    .modal-content { background:white; padding:2rem; border-radius:10px; min-width:320px; max-width:90vw; max-height:90vh; overflow:auto;}
+    .close-modal { float:right; cursor:pointer; font-size:1.3rem; color: var(--gray);}
+    .modal h2 {margin-top:0;}
+    @media(max-width:768px) {
+      .navbar{flex-direction:column;gap:1rem;}
+      .tools-grid{grid-template-columns:1fr;}
+      .hero h2{font-size:2rem;}
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="navbar">
+    <div class="logo">
+      <i class="fas fa-leaf"></i><h1>JardinPartage</h1>
+    </div>
+    <div class="nav-links">
+      <a href="#" class="active">Accueil</a>
+      <a href="#catalogue">Catalogue</a>
+      <a href="#" id="menuProposerBtn">Proposer un outil</a>
+    </div>
+    <div class="auth-buttons">
+      <button class="btn btn-outline" id="loginBtn">Connexion</button>
+      <button class="btn btn-primary" id="registerBtn">Inscription</button>
+      <button class="btn btn-secondary" id="logoutBtn" style="display:none;">Déconnexion</button>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-content">
+    <h2>Partagez, empruntez, cultivez ensemble</h2>
+    <p>Une communauté d'entraide pour l'entretien de vos jardins.<br>
+    Empruntez des outils, partagez vos appareils, ou proposez un achat collectif.</p>
+    <div style="display:flex; gap:1rem; justify-content:center;">
+      <button class="btn btn-primary" id="discoverBtn">Découvrir le catalogue</button>
+      <button class="btn btn-secondary" id="proposeBtn">Proposer un outil</button>
+    </div>
+  </div>
+</section>
+
+<section class="catalogue" id="catalogue">
+  <div class="section-title">
+    <h2>Outils disponibles</h2>
+    <p>Découvrez les outils que vous pouvez emprunter dans votre communauté</p>
+  </div>
+  <div class="tools-grid" id="catalogueGrid"></div>
+</section>
+
+<!-- --------- MODALES --------- -->
+<!-- Proposer un outil -->
+<div class="modal" id="proposerModal">
+  <div class="modal-content">
+    <span class="close-modal" id="closeProposerModal">&times;</span>
+    <h2>Proposer un outil</h2>
+    <form id="proposerForm">
+      <label>Nom de l'outil</label>
+      <input type="text" id="outilNom" required style="width:100%;">
+      <label>Description</label>
+      <textarea id="outilDesc" required style="width:100%;"></textarea>
+      <label>Localisation</label>
+      <input type="text" id="outilLocalisation" required style="width:100%;">
+      <label>Propriétaire (Nom ou email)</label>
+      <input type="text" id="outilProprietaire" required style="width:100%;">
+      <button type="submit" class="btn btn-primary" style="width:100%;margin-top:1rem;">Envoyer</button>
+    </form>
+  </div>
+</div>
+<!-- Connexion -->
+<div class="modal" id="loginModal">
+  <div class="modal-content">
+    <span class="close-modal" id="closeLoginModal">&times;</span>
+    <h2>Connexion</h2>
+    <form id="loginForm">
+      <label for="email">Email</label>
+      <input type="email" id="email" required style="width:100%">
+      <label for="password">Mot de passe</label>
+      <input type="password" id="password" required style="width:100%">
+      <button type="submit" class="btn btn-primary" style="width:100%;margin-top:1rem;">Se connecter</button>
+    </form>
+  </div>
+</div>
+<!-- Inscription -->
+<div class="modal" id="registerModal">
+  <div class="modal-content">
+    <span class="close-modal" id="closeRegisterModal">&times;</span>
+    <h2>Inscription</h2>
+    <form id="registerForm">
+      <label for="regEmail">Email</label>
+      <input type="email" id="regEmail" required style="width:100%">
+      <label for="regPassword">Mot de passe</label>
+      <input type="password" id="regPassword" required style="width:100%">
+      <button type="submit" class="btn btn-primary" style="width:100%;margin-top:1rem;">S'inscrire</button>
+    </form>
+  </div>
+</div>
+<!-- Réservation -->
+<div class="modal" id="reservationModal">
+  <div class="modal-content">
+    <span class="close-modal" id="closeReservationModal">&times;</span>
+    <h2>Réserver l'outil</h2>
+    <form id="reservationForm">
+      <label>Votre nom ou email</label>
+      <input type="text" id="resName" required style="width:100%">
+      <label>Date et heure de début</label>
+      <input type="datetime-local" id="resDateDebut" required style="width:100%">
+      <label>Date et heure de fin</label>
+      <input type="datetime-local" id="resDateFin" required style="width:100%">
+      <input type="hidden" id="resOutilId">
+      <button type="submit" class="btn btn-primary" style="width:100%;margin-top:1rem;">Réserver</button>
+    </form>
+  </div>
+</div>
+<!-- Détails -->
+<div class="modal" id="detailsModal">
+  <div class="modal-content">
+    <span class="close-modal" id="closeDetailsModal">&times;</span>
+    <div id="detailsContent"></div>
+  </div>
+</div>
+
+<!-- ------- SCRIPTS -------- -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script>
+const supabaseUrl = 'https://vvwaoublturvwnepluav.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2d2FvdWJsdHVydnduZXBsdWF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMDI5NzAsImV4cCI6MjA2ODY3ODk3MH0.X4NEPjWRze9hUToHquKVrL6ZdKQZznFjfXvNzPMIcTI';
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+// ----------- CHARGER CATALOGUE ----------- //
+async function chargerCatalogue() {
+  const { data: outils, error } = await supabase.from('outils').select('*').order('created_at', {ascending:false});
+  const grid = document.getElementById('catalogueGrid');
+  grid.innerHTML = '';
+  if (error || !outils) {
+    grid.innerHTML = '<p>Erreur de chargement du catalogue.</p>'; return;
+  }
+  if (!outils.length) { grid.innerHTML = '<p>Aucun outil disponible pour l’instant.</p>'; return; }
+  for (const outil of outils) {
+    grid.innerHTML += `
+      <div class="tool-card">
+        <div class="tool-image"><i class="fas fa-leaf"></i></div>
+        <div class="tool-info">
+          <h3>${outil.nom}</h3>
+          <p>${outil.description||''}</p>
+          <div class="tool-meta">
+            <span><i class="fas fa-user"></i> ${outil.proprietaire||'Utilisateur'}</span>
+            <span><i class="fas fa-map-marker-alt"></i> ${outil.localisation||''}</span>
+          </div>
+          <div class="availability ${outil.disponible!==false?'available':'unavailable'}">
+            ${outil.disponible!==false?'Disponible':'Indisponible'}
+          </div>
+          <div class="tool-actions">
+            <button class="btn btn-outline details-btn" data-id="${outil.id}">Détails</button>
+            <button class="btn btn-primary reserve-btn" data-id="${outil.id}" ${outil.disponible===false?'disabled':''}>Réserver</button>
+          </div>
+        </div>
+      </div>`;
+  }
+}
+
+// ----------------------- EVENEMENTS DOM --------------------- //
+document.addEventListener('DOMContentLoaded', function() {
+  // --------- HEADER et BOUTONS ---------
+  document.getElementById('discoverBtn').onclick = () =>
+    document.getElementById('catalogue').scrollIntoView({behavior:'smooth'});
+  // Proposer un outil (3 accès)
+  const openProposer = () => document.getElementById('proposerModal').style.display='flex';
+  document.getElementById('proposeBtn').onclick = openProposer;
+  document.getElementById('menuProposerBtn').onclick = openProposer;
+  // Fermeture proposer
+  document.getElementById('closeProposerModal').onclick =
+    () => document.getElementById('proposerModal').style.display='none';
+  window.addEventListener('click', e=>{
+    if(e.target===document.getElementById('proposerModal')) document.getElementById('proposerModal').style.display='none';
+  });
+
+  // Connexion
+  document.getElementById('loginBtn').onclick =
+    () => document.getElementById('loginModal').style.display='flex';
+  document.getElementById('closeLoginModal').onclick =
+    () => document.getElementById('loginModal').style.display='none';
+  window.addEventListener('click', e=>{
+    if(e.target===document.getElementById('loginModal')) document.getElementById('loginModal').style.display='none';
+  });
+
+  // Inscription
+  document.getElementById('registerBtn').onclick =
+    () => document.getElementById('registerModal').style.display='flex';
+  document.getElementById('closeRegisterModal').onclick =
+    () => document.getElementById('registerModal').style.display='none';
+  window.addEventListener('click', e=>{
+    if(e.target===document.getElementById('registerModal')) document.getElementById('registerModal').style.display='none';
+  });
+
+  // Logout bouton (affiché seulement si session)
+  document.getElementById('logoutBtn').onclick = async function() {
+    await supabase.auth.signOut();
+    document.getElementById('logoutBtn').style.display = "none";
+    document.getElementById('loginBtn').style.display = "inline-block";
+    document.getElementById('registerBtn').style.display = "inline-block";
+    alert('Déconnecté.');
+  };
+
+  // ------ SUPABASE SESSION -------
+  supabase.auth.getSession().then(({ data }) => {
+    if (data.session) {
+      document.getElementById('logoutBtn').style.display = "inline-block";
+      document.getElementById('loginBtn').style.display = "none";
+      document.getElementById('registerBtn').style.display = "none";
+    } else {
+      document.getElementById('logoutBtn').style.display = "none";
+      document.getElementById('loginBtn').style.display = "inline-block";
+      document.getElementById('registerBtn').style.display = "inline-block";
+    }
+  });
+
+  // ---------- FORMULAIRES SUPABASE --------------
+  // INSCRIPTION
+  document.getElementById('registerForm').onsubmit = async function(e) {
+    e.preventDefault();
+    const email = document.getElementById('regEmail').value;
+    const password = document.getElementById('regPassword').value;
+    const { error } = await supabase.auth.signUp({ email, password });
+    if(error) alert('Erreur inscription: ' + error.message);
+    else {
+      alert('Inscription réussie, vérifie tes emails.');
+      document.getElementById('registerModal').style.display = "none";
+    }
+  };
+  // CONNEXION
+  document.getElementById('loginForm').onsubmit = async function(e) {
+    e.preventDefault();
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if(error) alert('Erreur connexion: ' + error.message);
+    else {
+      alert('Connexion réussie !');
+      document.getElementById('loginModal').style.display = "none";
+      document.getElementById('loginBtn').style.display = "none";
+      document.getElementById('registerBtn').style.display = "none";
+      document.getElementById('logoutBtn').style.display = "inline-block";
+    }
+  };
+
+  // PROPOSER UN OUTIL
+  document.getElementById('proposerForm').onsubmit = async function(e) {
+    e.preventDefault();
+    const nom = document.getElementById('outilNom').value;
+    const description = document.getElementById('outilDesc').value;
+    const localisation = document.getElementById('outilLocalisation').value;
+    const proprietaire = document.getElementById('outilProprietaire').value;
+    const { error } = await supabase.from('outils').insert([
+      { nom, description, localisation, proprietaire, disponible:true }
+    ]);
+    if(error) alert('Erreur lors de la proposition : ' + error.message);
+    else {
+      alert('Merci pour votre proposition !');
+      document.getElementById('proposerModal').style.display = "none";
+      document.getElementById('proposerForm').reset();
+      chargerCatalogue();
+    }
+  };
+
+  // ------------- CATALOGUE BOUTONS (délégation) --------------
+  document.body.addEventListener('click', function(e) {
+    // Détails
+    if (e.target.classList.contains('details-btn')) {
+      const outilId = e.target.getAttribute('data-id');
+      showDetailsModal(outilId);
+    }
+    // Réserver
+    if (e.target.classList.contains('reserve-btn')) {
+      const outilId = e.target.getAttribute('data-id');
+      document.getElementById('resOutilId').value = outilId;
+      document.getElementById('reservationModal').style.display = 'flex';
+    }
+  });
+
+  // --- Fermeture modale réservation
+  document.getElementById('closeReservationModal').onclick =
+    () => document.getElementById('reservationModal').style.display = 'none';
+  window.addEventListener('click', e=>{
+    if(e.target===document.getElementById('reservationModal')) document.getElementById('reservationModal').style.display='none';
+  });
+  // Réserver
+  document.getElementById('reservationForm').onsubmit = async function(e) {
+    e.preventDefault();
+    const utilisateur = document.getElementById('resName').value;
+    const date_debut = document.getElementById('resDateDebut').value;
+    const date_fin = document.getElementById('resDateFin').value;
+    const outil_id = document.getElementById('resOutilId').value;
+    if(!date_debut || !date_fin) { alert("Merci de renseigner toutes les dates."); return;}
+    const { error } = await supabase.from('reservations').insert([{
+      outil_id, utilisateur_email: utilisateur, date_debut, date_fin, statut: "en_attente"
+    }]);
+    if(error) alert("Erreur lors de la réservation : " + error.message);
+    else {
+      alert("Réservation envoyée ! Le propriétaire validera ou refusera.");
+      document.getElementById('reservationModal').style.display = "none";
+      document.getElementById('reservationForm').reset();
+    }
+  };
+
+  // Détail outil
+  document.getElementById('closeDetailsModal').onclick =
+    () => document.getElementById('detailsModal').style.display = 'none';
+  window.addEventListener('click', e=>{
+    if(e.target===document.getElementById('detailsModal')) document.getElementById('detailsModal').style.display='none';
+  });
+
+  // CHARGEMENT INITIAL
+  chargerCatalogue();
+});
+
+// Détails outil (fonction séparée)
+async function showDetailsModal(outilId) {
+  const { data, error } = await supabase.from('outils').select('*').eq('id', outilId).single();
+  if(error||!data) {
+    alert('Erreur de chargement du détail.'); return;
+  }
+  document.getElementById('detailsContent').innerHTML = `
+    <h2>${data.nom}</h2>
+    <p><b>Description :</b> ${data.description||''}</p>
+    <p><b>Localisation :</b> ${data.localisation||''}</p>
+    <p><b>Propriétaire :</b> ${data.proprietaire||''}</p>
+    <p><b>Disponibilité :</b> ${data.disponible!==false?'Disponible':'Indisponible'}</p>`;
+  document.getElementById('detailsModal').style.display = "flex";
+}
+</script>
+</body>
+</html>
