@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+    <!-- ① On charge Supabase JS v2 -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // ② On crée le client Supabase
+  const supabaseUrl = 'https://vvwaoublturvwnepluav.supabase.co';
+  const supabaseKey = 'VOTRE_CLE_anon public'; 
+  window.supabase = supabase.createClient(supabaseUrl, supabaseKey);
+  console.log('✅ Supabase prêt', supabase);
+</script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JardinPartage - Outils communautaires</title>
