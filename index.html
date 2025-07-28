@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>JardinPartage - Plateforme Communautaire</title>
+
+  <!-- ① On charge Supabase JS v2 AVANT tout autre code JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // ② Instanciation du client Supabase
+    const supabaseUrl = 'https://vvwaoublturvwnepluav.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2d2FvdWJsdHVydnduZXBsdWF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMDI5NzAsImV4cCI6MjA2ODY3ODk3MH0.X4NEPjWRze9hUToHquKVrL6ZdKQZznFjfXvNzPMIcTI'; 
+    window.supabase = supabase.createClient(supabaseUrl, supabaseKey);
+    console.log('✅ Supabase prêt', window.supabase);
+  </script>
+
+  <!-- FullCalendar & FontAwesome -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+
+  <style>
+    :root { 
+      --primary: #2e7d32; 
+      --primary-light: #60ad5e; 
+      --primary-dark: #005005; 
+      --secondary: #ff9800;
+      --light: #f5f5f5; 
+      --dark: #333; 
+      --gray: #757575; 
+      --light-gray: #e0e0e0;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', Tahoma, Verdana, sans-serif; }
+    body { background:#f8f9fa; color:var(--dark); line-height:1.6; min-height:100vh; position:relative; }
+    header { background:white; box-shadow:0 2px 10px rgba(0,0,0,0.1); position:sticky; top:0; z-index:100; }
+    .navbar { display:flex; justify-content:space-between; align-items:center; padding:1rem 5%; max-width:1400px; margin:0 auto; }
+    .logo { display:flex; align-items:center; gap:10px; }
+    .logo i { font-size:2rem; color:var(--primary); }
+    .logo h1 { font-size:1.8rem; color:var(--primary); font-weight:700; }
+    .nav-links { display:flex; gap:2rem; }
+    .nav-links a { text-decoration:none; color:var(--dark); font-weight:500; transition:color 0.3s; }
+    .nav-links a:hover, .nav-links a.active { color:var(--primary); }
+    .auth-buttons { display:flex; gap:1rem; }
+    .btn { padding:0.6rem 1.5rem; border-radius:50px; font-weight:600; cursor:pointer; transition:all 0.3s; border:none; }
+    .btn-primary { background-color:var(--primary); color:white; }
+    .btn-primary:hover { background-color:var(--primary-dark); }
+    .btn-outline { background-color:transparent; border:2px solid var(--primary); color:var(--primary); }
+    .btn-outline:hover { background-color:var(--primary); color:white; }
+    .btn-secondary { background-color:var(--secondary); color:white; }
+    .btn-secondary:hover { background-color:#e65100; }
+    .hero { background:linear-gradient(rgba(0,0,0,0.5),rgba(0,0,0,0.5)),url('https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?q=80&w=1000&auto=format&fit=crop'); background-size:cover; background-position:center; color:white; text-align:center; padding:6rem 2rem; position:relative; }
+    .hero::before { content:''; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(46,125,50,0.7); z-index:1; }
+    .hero-content { position:relative; z-index:2; max-width:800px; margin:0 auto; }
+    .hero h2 { font-size:3rem; margin-bottom:1.5rem; text-shadow:0 2px 4px rgba(0,0,0,0.3); }
+    .hero p { font-size:1.2rem; margin-bottom:2rem; max-width:600px; margin:0 auto; }
+    .features, .purchase, .testimonials { padding:5rem 5%; background:white; }
+    .section-title { text-align:center; margin-bottom:3rem; color:var(--primary-dark); }
+    .section-title h2 { font-size:2.5rem; margin-bottom:1rem; }
+    .section-title p { color:var(--gray); max-width:700px; margin:0 auto; }
+    .features-grid, .tools-grid, .testimonials-grid { display:grid; gap:2rem; }
+    .features-grid { grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); max-width:1200px; margin:0 auto; }
+    .feature-card, .tool-card, .testimonial { background:white; border-radius:10px; overflow:hidden; box-shadow:0 5px 15px rgba(0,0,0,0.1); transition:transform 0.3s; }
+    .feature-card:hover, .tool-card:hover { transform:translateY(-5px); }
+    .feature-icon, .author-avatar { font-size:3rem; color:var(--primary); margin-bottom:1.5rem; }
+    .tool-image { height:200px; background:var(--light-gray); display:flex; align-items:center; justify-content:center; color:var(--gray); font-size:4rem; }
+    .tool-info { padding:1.5rem; }
+    .tool-meta { display:flex; justify-content:space-between; margin:1rem 0; color:var(--gray); }
+    .availability { display:inline-block; padding:0.3rem 0.8rem; border-radius:50px; font-size:.9rem; font-weight:500; }
+    .available { background-color:#e8f5e9; color:var(--primary); }
+    .unavailable { background-color:#ffebee; color:#c62828; }
+    .tool-actions { display:flex; justify-content:space-between; margin-top:1rem; }
+    .how-it-works .features-grid { background:#fff; padding:5rem 5%; }
+    .testimonial { background:#f8f9fa; padding:2rem; position:relative; }
+    .testimonial::before { content:"“"; position:absolute; top:20px; left:20px; font-size:4rem; color:var(--light-gray); font-family:serif; line-height:1; }
+    section#contact { padding:5rem 5%; background:#f8f9fa; }
+    section#contact form input, section#contact form textarea { width:100%; border:1px solid #ccc; padding:.5rem; border-radius:5px; margin-bottom:1rem; }
+    footer { background:var(--primary-dark); color:white; padding:4rem 5% 2rem; }
+    .footer-content { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:2rem; max-width:1200px; margin:0 auto; }
+    .footer-column h3 { position:relative; margin-bottom:1.5rem; }
+    .footer-column h3::after { content:''; position:absolute; left:0; bottom:-10px; width:50px; height:3px; background:var(--secondary); }
+    .footer-column ul { list-style:none; }
+    .footer-column ul li a { color:#ddd; text-decoration:none; transition:color 0.3s; }
+    .footer-column ul li a:hover { color:var(--secondary); }
+    .social-links { display:flex; gap:1rem; margin-top:1rem; }
+    .social-links a { display:flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,0.1); color:white; }
+    @media(max-width:768px){ .navbar{flex-direction:column;gap:1rem;} .nav-links{flex-wrap:wrap;justify-content:center;gap:1rem;} .hero h2{font-size:2.2rem;} .section-title h2{font-size:2rem;} }
+    .modal { display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center; }
+    .modal-content { background:white; padding:2rem; border-radius:10px; max-width:500px; width:90%; max-height:90vh; overflow-y:auto; }
+    .close-modal { float:right; font-size:1.5rem; cursor:pointer; }
+    .loader { border:5px solid #f3f3f3; border-top:5px solid var(--primary); border-radius:50%; width:50px; height:50px; animation:spin 1s linear infinite; margin:20px auto; display:none; }
+    @keyframes spin { 0%{transform:rotate(0deg);}100%{transform:rotate(360deg);} }
+    .notification { position:fixed; top:20px; right:20px; padding:15px 25px; border-radius:5px; color:white; font-weight:600; z-index:2000; opacity:0; transform:translateY(-20px); transition:opacity .3s,transform .3s; max-width:350px; }
+    .notification.show { opacity:1; transform:translateY(0); }
+    .notification.success { background:var(--primary); }
+    .notification.error { background:#d32f2f; }
+    .status-bar { position:fixed; top:0; left:0; width:100%; height:4px; background:var(--primary); z-index:2001; transform:translateX(-100%); transition:transform .3s ease; }
+    .status-bar.active { transform:translateX(0); }
+  </style>
+</head>
+<body>
+  <!-- Barre d’état -->
+  <div class="status-bar" id="statusBar"></div>
+
+  <!-- Header -->
+  <header>
+    <div class="navbar">
+      <div class="logo">
+        <i class="fas fa-leaf"></i><h1>JardinPartage</h1>
+      </div>
+      <nav class="nav-links">
+        <a href="#" class="active">Accueil</a>
+        <a href="#catalogue">Catalogue</a>
+        <a href="#how-it-works">Comment ça marche</a>
+        <a href="#" id="menuProposerBtn">Proposer un outil</a>
+        <a href="#achats">Achats</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <div class="auth-buttons">
+        <button class="btn btn-outline" id="loginBtn">Connexion</button>
+        <button class="btn btn-primary" id="registerBtn">Inscription</button>
+        <button class="btn btn-secondary" id="logoutBtn" style="display:none;">Déconnexion</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-content">
+      <h2>Partagez, empruntez, cultivez ensemble</h2>
+      <p>Une communauté d'entraide pour l'entretien de vos jardins. Empruntez des outils, partagez vos appareils, ou proposez un achat collectif.</p>
+      <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
+        <button class="btn btn-primary" id="discoverBtn">Découvrir le catalogue</button>
+        <button class="btn btn-secondary" id="proposeBtn">Proposer un outil</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features">
+    <div class="section-title">
+      <h2>Notre plateforme communautaire</h2>
+      <p>JardinPartage facilite le partage d'outils et d'appareils entre voisins pour un jardinage plus économique et écologique.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fas fa-tools"></i></div>
+        <h3>Partage d'outils</h3>
+        <p>Mettez à disposition vos outils peu utilisés et empruntez ceux dont vous avez besoin.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fas fa-handshake"></i></div>
+        <h3>Emprunt facile</h3>
+        <p>Réservez en ligne, rencontrez votre voisin et profitez des outils nécessaires.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fas fa-shopping-cart"></i></div>
+        <h3>Achats collectifs</h3>
+        <p>Proposez l'achat d'un nouvel équipement et mutualisez les coûts.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Catalogue -->
+  <section class="catalogue" id="catalogue">
+    <div class="section-title">
+      <h2>Outils disponibles</h2>
+      <p>Découvrez les outils que vous pouvez emprunter dans votre communauté</p>
+    </div>
+    <div class="tools-grid" id="catalogueGrid">
+      <div class="loader" id="catalogueLoader"></div>
+    </div>
+  </section>
+
+  <!-- Achats collectifs -->
+  <section class="purchase" id="achats">
+    <div class="section-title">
+      <h2>Achats collectifs</h2>
+      <p>Proposez un nouvel équipement pour la communauté</p>
+    </div>
+    <div class="purchase-content">
+      <p>Un équipement manque ? Proposez un achat collectif ! Si assez de membres sont intéressés, nous l’achèterons ensemble.</p>
+      <button class="btn btn-secondary" id="purchaseBtn">Proposer un achat collectif</button>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="how-it-works" id="how-it-works">
+    <div class="section-title">
+      <h2>Comment ça marche ?</h2>
+      <p>En quelques étapes simples, empruntez ou partagez vos outils de jardinage.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fas fa-user-plus"></i></div>
+        <h3>Inscription</h3>
+        <p>Créez votre compte en quelques minutes.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fas fa-search"></i></div>
+        <h3>Recherche</h3>
+        <p>Parcourez le catalogue ou proposez vos propres outils.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fas fa-calendar-check"></i></div>
+        <h3>Réservation</h3>
+        <p>Réservez l’outil et convenez d’un rendez-vous.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Témoignages -->
+  <section class="testimonials">
+    <div class="section-title">
+      <h2>Témoignages</h2>
+      <p>Ce que disent les membres de notre communauté</p>
+    </div>
+    <div class="testimonials-grid">
+      <div class="testimonial">
+        <p>"Grâce à JardinPartage, j'ai pu emprunter une tondeuse sans en acheter une."</p>
+        <div class="testimonial-author">
+          <div class="author-avatar"><i class="fas fa-user"></i></div>
+          <div><h4>Sophie Martin</h4><p>Membre depuis 2022</p></div>
+        </div>
+      </div>
+      <div class="testimonial">
+        <p>"Achat d'un broyeur en collectif : super initiative !"</p>
+        <div class="testimonial-author">
+          <div class="author-avatar"><i class="fas fa-user"></i></div>
+          <div><h4>Pierre Dubois</h4><p>Membre depuis 2021</p></div>
+        </div>
+      </div>
+      <div class="testimonial">
+        <p>"La plateforme sécurisée m'a convaincu, tout se passe bien !"</p>
+        <div class="testimonial-author">
+          <div class="author-avatar"><i class="fas fa-user"></i></div>
+          <div><h4>Émilie Rousseau</h4><p>Membre depuis 2023</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section id="contact">
+    <div class="section-title">
+      <h2>Contact</h2>
+      <p>Une question ? Écrivez-nous !</p>
+    </div>
+    <form id="contactForm">
+      <label>Nom :</label>
+      <input type="text" id="contactName" required />
+      <label>Email :</label>
+      <input type="email" id="contactEmail" required />
+      <label>Message :</label>
+      <textarea id="contactMessage" required></textarea>
+      <button type="submit" class="btn btn-primary">Envoyer</button>
+    </form>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-content">
+      <div class="footer-column">
+        <h3>JardinPartage</h3>
+        <p>Partagez, empruntez et cultivez ensemble dans votre communauté.</p>
+        <div class="social-links">
+          <a href="#"><i class="fab fa-facebook-f"></i></a>
+          <a href="#"><i class="fab fa-twitter"></i></a>
+          <a href="#"><i class="fab fa-instagram"></i></a>
+          <a href="#"><i class="fab fa-linkedin-in"></i></a>
+        </div>
+      </div>
+      <div class="footer-column">
+        <h3>Liens rapides</h3>
+        <ul>
+          <li><a href="#">Accueil</a></li>
+          <li><a href="#catalogue">Catalogue</a></li>
+          <li><a href="#how-it-works">Comment ça marche</a></li>
+          <li><a href="#" id="footerProposerBtn">Proposer un outil</a></li>
+          <li><a href="#achats">Achats collectifs</a></li>
+        </ul>
+      </div>
+      <div class="footer-column">
+        <h3>Communautés</h3>
+        <ul>
+          <li><a href="#">Notre village</a></li>
+          <li><a href="#">Communauté de communes</a></li>
+          <li><a href="#">Devenir partenaire</a></li>
+          <li><a href="#">Événements</a></li>
+        </ul>
+      </div>
+      <div class="footer-column">
+        <h3>Contact</h3>
+        <ul>
+          <li><i class="fas fa-map-marker-alt"></i> Place de la Mairie, 12345 Village</li>
+          <li><i class="fas fa-phone"></i> 01 23 45 67 89</li>
+          <li><i class="fas fa-envelope"></i> contact@jardinpartage.fr</li>
+        </ul>
+      </div>
+    </div>
+    <div class="copyright">
+      <p>&copy; 2023 JardinPartage. Tous droits réservés.</p>
+    </div>
+  </footer>
+
+  <!-- Modales -->
+  <div class="modal" id="loginModal">
+    <div class="modal-content">
+      <span class="close-modal" id="closeLoginModal">&times;</span>
+      <h2>Connexion</h2>
+      <form id="loginForm">
+        <div><label for="email">Email</label><input type="email" id="email" required /></div>
+        <div><label for="password">Mot de passe</label><input type="password" id="password" required /></div>
+        <button type="submit" class="btn btn-primary">Se connecter</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="registerModal">
+    <div class="modal-content">
+      <span class="close-modal" id="closeRegisterModal">&times;</span>
+      <h2>Inscription</h2>
+      <form id="registerForm">
+        <div><label for="regEmail">Email</label><input type="email" id="regEmail" required /></div>
+        <div><label for="regPassword">Mot de passe</label><input type="password" id="regPassword" required /></div>
+        <button type="submit" class="btn btn-primary">S'inscrire</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="proposerModal">
+    <div class="modal-content">
+      <span class="close-modal" id="closeProposerModal">&times;</span>
+      <h2>Proposer un nouvel outil</h2>
+      <form id="proposerForm">
+        <div><label for="outilNom">Nom de l'outil</label><input type="text" id="outilNom" required /></div>
+        <div><label for="outilDesc">Description</label><textarea id="outilDesc" required></textarea></div>
+        <div><label for="outilLocalisation">Localisation</label><input type="text" id="outilLocalisation" required /></div>
+        <div><label for="outilProprietaire">Propriétaire</label><input type="text" id="outilProprietaire" required /></div>
+        <button type="submit" class="btn btn-primary">Envoyer</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="reservationModal">
+    <div class="modal-content">
+      <span class="close-modal" id="closeReservationModal">&times;</span>
+      <h2>Réserver l'outil</h2>
+      <form id="reservationForm">
+        <div><label for="resName">Votre nom ou email</label><input type="text" id="resName" required /></div>
+        <div><label for="resDateDebut">Date et heure de début</label><input type="datetime-local" id="resDateDebut" required /></div>
+        <div><label for="resDateFin">Date et heure de fin</label><input type="datetime-local" id="resDateFin" required /></div>
+        <input type="hidden" id="resOutilId" />
+        <button type="submit" class="btn btn-primary">Réserver</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="detailsModal">
+    <div class="modal-content">
+      <span class="close-modal" id="closeDetailsModal">&times;</span>
+      <div id="detailsContent"></div>
+    </div>
+  </div>
+
+  <!-- Notification container -->
+  <div id="notification" class="notification"></div>
+
+  <!-- FullCalendar & FR locale -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/fr.min.js"></script>
+
+  <!-- ③ Code métier -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Status bar
+      const statusBar = document.getElementById('statusBar');
+      statusBar.classList.add('active');
+      setTimeout(() => statusBar.classList.remove('active'), 1000);
+
+      // Notification helper
+      const notify = (msg, type) => {
+        const n = document.getElementById('notification');
+        n.textContent = msg;
+        n.className = `notification ${type} show`;
+        setTimeout(() => n.classList.remove('show'), 3000);
+      };
+
+      // Random utils
+      const getRandomColor = () => ['#e3f2fd','#f1f8e9','#fff8e1','#ffebee','#e8f5e9','#f9fbe7'][Math.floor(Math.random()*6)];
+      const getRandomToolIcon = () => ['leaf','seedling','tree','tractor','spa','cloud-sun','sun','water'][Math.floor(Math.random()*8)];
+
+      // Charger catalogue
+      async function chargerCatalogue() {
+        const loader = document.getElementById('catalogueLoader');
+        loader.style.display = 'block';
+        const { data: outils, error } = await supabase.from('outils').select('*').order('created_at',{ascending:false});
+        const grid = document.getElementById('catalogueGrid');
+        grid.innerHTML = '';
+        if(error) {
+          notify('Erreur de chargement','error');
+        } else if(!outils || outils.length===0) {
+          grid.innerHTML = '<p>Aucun outil disponible.</p>';
+        } else {
+          outils.forEach(o => {
+            const card = document.createElement('div');
+            card.className = 'tool-card';
+            card.innerHTML = `
+              <div class="tool-image" style="background:${getRandomColor()}">
+                <i class="fas fa-${getRandomToolIcon()}"></i>
+              </div>
+              <div class="tool-info">
+                <h3>${o.nom}</h3>
+                <p>${o.description}</p>
+                <div class="tool-meta">
+                  <span><i class="fas fa-user"></i> ${o.proprietaire}</span>
+                  <span><i class="fas fa-map-marker-alt"></i> ${o.localisation}</span>
+                </div>
+                <div class="availability ${o.disponible?'available':'unavailable'}">
+                  ${o.disponible?'Disponible':'Indisponible'}
+                </div>
+                <div class="tool-actions">
+                  <button class="btn btn-outline details-btn" data-id="${o.id}">Détails</button>
+                  <button class="btn btn-primary reserve-btn" data-id="${o.id}" ${o.disponible?'':'disabled'}>Réserver</button>
+                </div>
+              </div>`;
+            grid.appendChild(card);
+          });
+        }
+        loader.style.display = 'none';
+      }
+
+      // Initial load
+      chargerCatalogue();
+
+      // Scroll smooth
+      document.querySelectorAll('.nav-links a, .footer-column a').forEach(a=>{
+        a.addEventListener('click', e=>{
+          if(a.hash && document.querySelector(a.hash)){
+            e.preventDefault();
+            document.querySelector(a.hash).scrollIntoView({behavior:'smooth'});
+          }
+        });
+      });
+
+      // Auth modals
+      const loginBtn = document.getElementById('loginBtn');
+      const registerBtn = document.getElementById('registerBtn');
+      const logoutBtn = document.getElementById('logoutBtn');
+      const loginModal = document.getElementById('loginModal');
+      const registerModal = document.getElementById('registerModal');
+      document.getElementById('closeLoginModal').onclick = ()=>loginModal.style.display='none';
+      document.getElementById('closeRegisterModal').onclick = ()=>registerModal.style.display='none';
+      window.onclick = e=>{
+        if(e.target===loginModal) loginModal.style.display='none';
+        if(e.target===registerModal) registerModal.style.display='none';
+      };
+      loginBtn.onclick = ()=> loginModal.style.display='flex';
+      registerBtn.onclick = ()=> registerModal.style.display='flex';
+
+      // Sign up
+      document.getElementById('registerForm').onsubmit = async e=>{
+        e.preventDefault();
+        const email = document.getElementById('regEmail').value;
+        const password = document.getElementById('regPassword').value;
+        const { error } = await supabase.auth.signUp({ email, password });
+        if(error) notify('Erreur inscription: '+error.message,'error');
+        else { notify('Inscription réussie, vérifiez vos mails','success'); registerModal.style.display='none'; }
+      };
+
+      // Sign in
+      document.getElementById('loginForm').onsubmit = async e=>{
+        e.preventDefault();
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if(error) notify('Erreur connexion: '+error.message,'error');
+        else {
+          notify('Connexion réussie','success');
+          loginModal.style.display='none';
+          loginBtn.style.display='none';
+          registerBtn.style.display='none';
+          logoutBtn.style.display='inline-block';
+        }
+      };
+
+      logoutBtn.onclick = async ()=>{
+        await supabase.auth.signOut();
+        notify('Déconnecté','success');
+        loginBtn.style.display='inline-block';
+        registerBtn.style.display='inline-block';
+        logoutBtn.style.display='none';
+      };
+
+      supabase.auth.getSession().then(({data})=>{
+        if(data.session) {
+          loginBtn.style.display='none';
+          registerBtn.style.display='none';
+          logoutBtn.style.display='inline-block';
+        }
+      });
+
+      // Découvrir catalogue
+      document.getElementById('discoverBtn').onclick = ()=> document.getElementById('catalogue').scrollIntoView({behavior:'smooth'});
+
+      // Proposer un outil
+      const proposerModal = document.getElementById('proposerModal');
+      document.getElementById('proposeBtn').onclick =
+      document.getElementById('menuProposerBtn').onclick =
+      document.getElementById('footerProposerBtn').onclick =
+        ()=> proposerModal.style.display='flex';
+      document.getElementById('closeProposerModal').onclick = ()=> proposerModal.style.display='none';
+      window.addEventListener('click', e=>{ if(e.target===proposerModal) proposerModal.style.display='none'; });
+
+      document.getElementById('proposerForm').onsubmit = async e=>{
+        e.preventDefault();
+        const nom = document.getElementById('outilNom').value;
+        const description = document.getElementById('outilDesc').value;
+        const localisation = document.getElementById('outilLocalisation').value;
+        const proprietaire = document.getElementById('outilProprietaire').value;
+        const { error } = await supabase.from('outils').insert([{ nom, description, localisation, proprietaire, disponible:true }]);
+        if(error) notify('Erreur proposition: '+error.message,'error');
+        else {
+          notify('Merci pour votre proposition','success');
+          proposerModal.style.display='none';
+          e.target.reset();
+          chargerCatalogue();
+        }
+      };
+
+      // Réservation & Détails
+      const reservationModal = document.getElementById('reservationModal');
+      const detailsModal     = document.getElementById('detailsModal');
+      document.getElementById('closeReservationModal').onclick = ()=> reservationModal.style.display='none';
+      document.getElementById('closeDetailsModal').onclick     = ()=> detailsModal.style.display='none';
+      window.addEventListener('click', e=>{
+        if(e.target===reservationModal) reservationModal.style.display='none';
+        if(e.target===detailsModal)     detailsModal.style.display='none';
+      });
+
+      document.getElementById('catalogueGrid').addEventListener('click', async e=>{
+        const btn = e.target;
+        // Détails
+        if(btn.classList.contains('details-btn')) {
+          const id = btn.dataset.id;
+          const { data: outil, error } = await supabase.from('outils').select('*').eq('id',id).single();
+          if(error) return notify('Erreur détails','error');
+          document.getElementById('detailsContent').innerHTML = `
+            <h2>${outil.nom}</h2>
+            <p><strong>Description:</strong> ${outil.description}</p>
+            <p><strong>Propriétaire:</strong> ${outil.proprietaire}</p>
+            <p><strong>Localisation:</strong> ${outil.localisation}</p>
+            <p><strong>Disponibilité:</strong> ${outil.disponible?'Disponible':'Indisponible'}</p>
+            <button class="btn btn-primary" onclick="
+              document.getElementById('resOutilId').value='${outil.id}';
+              reservationModal.style.display='flex';
+              detailsModal.style.display='none';
+            ">Réserver</button>
+          `;
+          detailsModal.style.display='flex';
+        }
+
+        // Réserver
+        if(btn.classList.contains('reserve-btn')) {
+          document.getElementById('resOutilId').value = btn.dataset.id;
+          reservationModal.style.display='flex';
+        }
+      });
+
+      document.getElementById('reservationForm').onsubmit = async e=>{
+        e.preventDefault();
+        const id = document.getElementById('resOutilId').value;
+        const { error } = await supabase.from('outils').update({ disponible:false }).eq('id',id);
+        if(error) notify('Erreur réservation','error');
+        else {
+          notify('Réservation réussie','success');
+          reservationModal.style.display='none';
+          chargerCatalogue();
+        }
+      };
+
+      // Achats
+      document.getElementById('purchaseBtn').onclick = ()=> notify('Bientôt disponible!','success');
+
+      // Contact
+      document.getElementById('contactForm').onsubmit = e=>{
+        e.preventDefault();
+        const name = document.getElementById('contactName').value;
+        notify(`Merci ${name}, message bien reçu!`,'success');
+        e.target.reset();
+      };
+    });
+  </script>
+</body>
+</html>
