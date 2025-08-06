@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>JardinPartage - Plateforme Communautaire</title>
+
+  <!-- ① On charge Supabase JS v2 AVANT tout autre code JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // ② Instanciation du client Supabase
+    const supabaseUrl = 'https://vvwaoublturvwnepluav.supabase.co';
+    const supabaseKey = 'VOTRE_CLE_ANON_SUPABASE_ICI'; 
+    window.supabase = supabase.createClient(supabaseUrl, supabaseKey);
+    console.log('✅ Supabase prêt', window.supabase);
+  </script>
+
+  <!-- FullCalendar & FontAwesome -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+
+  <style>
+    /* ... Votre CSS inchangé (pour raison d’espace, je l’ai omis ici) ... */
+  </style>
+</head>
+<body>
+  <!-- Barre d’état -->
+  <div class="status-bar" id="statusBar"></div>
+
+  <!-- Header -->
+  <header>
+    <div class="navbar">
+      <div class="logo"><i class="fas fa-leaf"></i><h1>JardinPartage</h1></div>
+      <nav class="nav-links">
+        <a href="#" class="active">Accueil</a>
+        <a href="#catalogue">Catalogue</a>
+        <a href="#how-it-works">Comment ça marche</a>
+        <a href="#" id="menuProposerBtn">Proposer un outil</a>
+        <a href="#achats">Achats</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <div class="auth-buttons">
+        <button class="btn btn-outline" id="loginBtn">Connexion</button>
+        <button class="btn btn-primary" id="registerBtn">Inscription</button>
+        <button class="btn btn-secondary" id="logoutBtn" style="display:none;">Déconnexion</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-content">
+      <h2>Partagez, empruntez, cultivez ensemble</h2>
+      <p>Une communauté d'entraide pour l'entretien de vos jardins.</p>
+      <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
+        <button class="btn btn-primary" id="discoverBtn">Découvrir le catalogue</button>
+        <button class="btn btn-secondary" id="proposeBtn">Proposer un outil</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Catalogue -->
+  <section class="catalogue" id="catalogue">
+    <div class="section-title">
+      <h2>Outils disponibles</h2>
+      <p>Découvrez les outils que vous pouvez emprunter dans votre communauté</p>
+      <!-- Piste 1 & 2 : filtre de date -->
+      <div style="margin-top:1rem;text-align:center;">
+        <input type="date" id="filterStart"> —
+        <input type="date" id="filterEnd">
+        <button class="btn btn-outline" id="applyFilter">Filtrer</button>
+      </div>
+    </div>
+    <div class="tools-grid" id="catalogueGrid">
+      <div class="loader" id="catalogueLoader"></div>
+    </div>
+  </section>
+
+  <!-- Achats collectifs -->
+  <section class="purchase" id="achats">
+    <div class="section-title">
+      <h2>Achats collectifs</h2>
+      <p>Proposez un nouvel équipement pour la communauté</p>
+    </div>
+    <div class="purchase-content">
+      <button class="btn btn-secondary" id="purchaseBtn">Proposer un achat collectif</button>
+    </div>
+  </section>
+
+  <!-- ... Le reste de votre HTML (How it works, Témoignages, Contact, Footer, Modales) inchangé ... -->
+
+  <!-- Notification container -->
+  <div id="notification" class="notification"></div>
+
+  <!-- FullCalendar & FR locale -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/fr.min.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // --- Définitions obligatoires avant tout appel ---
+      function getRandomColor() {
+        const colors = ['#e3f2fd','#f1f8e9','#fff8e1','#ffebee','#e8f5e9','#f9fbe7'];
+        return colors[Math.floor(Math.random() * colors.length)];
+      }
+      function getRandomToolIcon() {
+        const icons = ['leaf','seedling','tree','tractor','spa','cloud-sun','sun','water'];
+        return icons[Math.floor(Math.random() * icons.length)];
+      }
+
+      // Status bar animé
+      const statusBar = document.getElementById('statusBar');
+      statusBar.classList.add('active');
+      setTimeout(()=> statusBar.classList.remove('active'), 1000);
+
+      // Notification helper
+      const notify = (msg, type) => {
+        const n = document.getElementById('notification');
+        n.textContent = msg;
+        n.className = `notification ${type} show`;
+        setTimeout(()=> n.classList.remove('show'), 3000);
+      };
+
+      // Chargement ET filtrage du catalogue
+      async function chargerCatalogue(start, end) {
+        document.getElementById('catalogueLoader').style.display = 'block';
+        let query = supabase.from('outils').select('*');
+        // Si dates fournies, on filtre sur les réservations existantes
+        if (start && end) {
+          query = query
+            .or(`\
+(disponible.eq.true),\
+(\
+AND(\
+date_debut.lte.${end},\
+date_fin.gte.${start}\
+)\
+).not`);
+        }
+        const { data: outils, error } = await query.order('created_at', { ascending:false });
+        const grid = document.getElementById('catalogueGrid');
+        grid.innerHTML = '';
+        if (error) {
+          notify('Erreur de chargement','error');
+        } else if (!outils || outils.length === 0) {
+          grid.innerHTML = '<p>Aucun outil disponible sur cette période.</p>';
+        } else {
+          outils.forEach(o => {
+            const card = document.createElement('div');
+            card.className = 'tool-card';
+            card.innerHTML = `
+              <div class="tool-image" style="background:${getRandomColor()}">
+                <i class="fas fa-${getRandomToolIcon()}"></i>
+              </div>
+              <div class="tool-info">
+                <h3>${o.nom}</h3>
+                <p>${o.description}</p>
+                <div class="availability ${o.disponible?'available':'unavailable'}">
+                  ${o.disponible?'Disponible':'Emprunté'}
+                </div>
+                <div class="tool-actions">
+                  <button class="btn btn-primary reserve-btn" data-id="${o.id}" ${o.disponible?'':'disabled'}>Réserver</button>
+                </div>
+              </div>`;
+            grid.appendChild(card);
+          });
+        }
+        document.getElementById('catalogueLoader').style.display = 'none';
+      }
+
+      // Initial
+      chargerCatalogue();
+
+      // Filtrer par date
+      document.getElementById('applyFilter').addEventListener('click', () => {
+        const start = document.getElementById('filterStart').value;
+        const end   = document.getElementById('filterEnd').value;
+        chargerCatalogue(start, end);
+      });
+
+      // Boutons Proposer un outil (hero, menu, footer)
+      [ 'proposeBtn', 'menuProposerBtn', 'footerProposerBtn' ].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.addEventListener('click', ()=> document.getElementById('proposerModal').style.display='flex');
+      });
+
+      // … Le reste des handlers (auth, réservations, modales, etc.) inchangés …
+    });
+  </script>
+</body>
+</html>
