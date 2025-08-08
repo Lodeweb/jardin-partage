@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>JardinPartage - Plateforme Communautaire</title>
+
+  <!-- Supabase v2 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const supabaseUrl = 'https://vvwaoublturvwnepluav.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2d2FvdWJsdHVydnduZXBsdWF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMDI5NzAsImV4cCI6MjA2ODY3ODk3MH0.X4NEPjWRze9hUToHquKVrL6ZdKQZznFjfXvNzPMIcTI';
+    window.supabase = supabase.createClient(supabaseUrl, supabaseKey);
+  </script>
+
+  <!-- FullCalendar & FontAwesome -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <style>
+    :root{--primary:#2e7d32;--primary-light:#60ad5e;--primary-dark:#005005;--secondary:#ff9800;--light:#f5f5f5;--dark:#333;--gray:#757575;--light-gray:#e0e0e0}
+    *{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI,Tahoma,Verdana,sans-serif}
+    body{background:#f8f9fa;color:var(--dark);line-height:1.6;min-height:100vh}
+    header{background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.1);position:sticky;top:0;z-index:100}
+    .navbar{display:flex;justify-content:space-between;align-items:center;padding:1rem 5%;max-width:1400px;margin:0 auto}
+    .logo{display:flex;align-items:center;gap:10px}.logo i{font-size:2rem;color:var(--primary)}.logo h1{font-size:1.8rem;color:var(--primary);font-weight:700}
+    .nav-links{display:flex;gap:2rem;flex-wrap:wrap}
+    .nav-links a{text-decoration:none;color:var(--dark);font-weight:500;transition:color .3s}
+    .nav-links a:hover,.nav-links a.active{color:var(--primary)}
+    .auth-buttons{display:flex;gap:1rem}
+    .btn{padding:.6rem 1.5rem;border-radius:50px;font-weight:600;cursor:pointer;transition:all .3s;border:none}
+    .btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-dark)}
+    .btn-outline{background:transparent;border:2px solid var(--primary);color:var(--primary)}.btn-outline:hover{background:var(--primary);color:#fff}
+    .btn-secondary{background:var(--secondary);color:#fff}.btn-secondary:hover{background:#e65100}
+
+    .hero{background:linear-gradient(rgba(0,0,0,.5),rgba(0,0,0,.5)),url('https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?q=80&w=1200&auto=format&fit=crop');background-size:cover;background-position:center;color:#fff;text-align:center;padding:6rem 2rem;position:relative}
+    .hero::before{content:'';position:absolute;inset:0;background:rgba(46,125,50,.7);z-index:1}
+    .hero-content{position:relative;z-index:2;max-width:900px;margin:0 auto}
+    .hero h2{font-size:3rem;margin-bottom:1.2rem;text-shadow:0 2px 4px rgba(0,0,0,.3)}
+    .hero p{font-size:1.15rem;margin:0 auto 2rem;max-width:650px}
+
+    .section{padding:5rem 5%;background:#fff}
+    .section.alt{background:#f8f9fa}
+    .section-title{text-align:center;margin-bottom:2rem;color:var(--primary-dark)}
+    .section-title h2{font-size:2.2rem;margin-bottom:.6rem}
+    .section-title p{color:var(--gray);max-width:700px;margin:0 auto}
+
+    .features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.25rem;max-width:1200px;margin:0 auto}
+    .feature-card{background:#fff;border-radius:12px;padding:1.5rem;box-shadow:0 5px 15px rgba(0,0,0,.08);text-align:center}
+    .feature-icon{font-size:2.4rem;color:var(--primary);margin-bottom:1rem}
+
+    .catalogue-toolbar{display:flex;gap:.75rem;flex-wrap:wrap;align-items:center;justify-content:center;margin:1rem auto 2rem}
+    .catalogue-toolbar input{padding:.55rem .75rem;border:1px solid #ddd;border-radius:8px}
+    .tools-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.25rem;max-width:1200px;margin:0 auto}
+    .tool-card{background:#fff;border-radius:12px;box-shadow:0 5px 15px rgba(0,0,0,.08);overflow:hidden;transition:transform .2s}
+    .tool-card:hover{transform:translateY(-3px)}
+    .tool-image{height:180px;display:flex;align-items:center;justify-content:center;font-size:3rem}
+    .tool-info{padding:1rem 1.25rem}
+    .tool-info h3{font-size:1.2rem;margin-bottom:.5rem}
+    .tool-meta{display:flex;justify-content:space-between;gap:.75rem;color:var(--gray);font-size:.95rem;margin:.6rem 0}
+    .availability{display:inline-block;padding:.25rem .7rem;border-radius:999px;font-size:.85rem;font-weight:600}
+    .available{background:#e8f5e9;color:#1b5e20}.unavailable{background:#ffebee;color:#b71c1c}
+    .tool-actions{display:flex;gap:.6rem;margin-top:.8rem}
+
+    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center;padding:1rem}
+    .modal-content{background:#fff;padding:1.5rem;border-radius:12px;max-width:520px;width:100%;max-height:85vh;overflow:auto}
+    .close-modal{float:right;font-size:1.4rem;cursor:pointer}
+    form .row{margin:.9rem 0}
+    form input,form textarea{width:100%;border:1px solid #ddd;border-radius:8px;padding:.6rem}
+
+    .loader{border:5px solid #f3f3f3;border-top:5px solid var(--primary);border-radius:50%;width:46px;height:46px;animation:spin 1s linear infinite;margin:20px auto;display:none}
+    @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+
+    .notification{position:fixed;top:20px;right:20px;padding:14px 20px;border-radius:10px;color:#fff;font-weight:700;z-index:2000;opacity:0;transform:translateY(-20px);transition:.3s}
+    .notification.show{opacity:1;transform:translateY(0)}
+    .notification.success{background:var(--primary)}.notification.error{background:#d32f2f}
+
+    footer{background:var(--primary-dark);color:#fff;padding:3rem 5% 2rem;margin-top:3rem}
+    .footer-content{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1.25rem;max-width:1200px;margin:0 auto}
+    .footer-column h3{margin-bottom:1rem}
+    .footer-column a{color:#ddd;text-decoration:none}
+    .social-links{display:flex;gap:.6rem;margin-top:.6rem}
+    .social-links a{width:38px;height:38px;display:grid;place-items:center;border-radius:50%;background:rgba(255,255,255,.12);color:#fff}
+
+    @media(max-width:768px){.hero h2{font-size:2.2rem}.nav-links{justify-content:center}}
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="navbar">
+      <div class="logo"><i class="fas fa-leaf"></i><h1>JardinPartage</h1></div>
+      <nav class="nav-links">
+        <a href="#" class="active">Accueil</a>
+        <a href="#catalogue">Catalogue</a>
+        <a href="#how-it-works">Comment ça marche</a>
+        <a href="#" data-open-proposer>Proposer un outil</a>
+        <a href="#achats">Achats</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <div class="auth-buttons">
+        <button class="btn btn-outline" id="loginBtn">Connexion</button>
+        <button class="btn btn-primary" id="registerBtn">Inscription</button>
+        <button class="btn btn-secondary" id="logoutBtn" style="display:none;">Déconnexion</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-content">
+      <h2>Partagez, empruntez, cultivez ensemble</h2>
+      <p>Une communauté d'entraide pour l'entretien de vos jardins. Empruntez des outils, partagez vos appareils, ou proposez un achat collectif.</p>
+      <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
+        <button class="btn btn-primary" id="discoverBtn">Découvrir le catalogue</button>
+        <button class="btn btn-secondary" data-open-proposer>Proposer un outil</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="section">
+    <div class="section-title">
+      <h2>Notre plateforme communautaire</h2>
+      <p>JardinPartage facilite le partage d'outils et d'appareils entre voisins pour un jardinage plus économique et écologique.</p>
+    </div>
+    <div class="features-grid">
+      <article class="feature-card">
+        <div class="feature-icon"><i class="fas fa-tools"></i></div>
+        <h3>Partage d'outils</h3>
+        <p>Mettez à disposition vos outils peu utilisés et empruntez ceux dont vous avez besoin.</p>
+      </article>
+      <article class="feature-card">
+        <div class="feature-icon"><i class="fas fa-handshake"></i></div>
+        <h3>Emprunt facile</h3>
+        <p>Réservez en ligne, rencontrez votre voisin et profitez des outils nécessaires.</p>
+      </article>
+      <article class="feature-card">
+        <div class="feature-icon"><i class="fas fa-shopping-cart"></i></div>
+        <h3>Achats collectifs</h3>
+        <p>Proposez l'achat d'un nouvel équipement et mutualisez les coûts.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- Catalogue -->
+  <section class="section alt" id="catalogue">
+    <div class="section-title">
+      <h2>Outils disponibles</h2>
+      <p>Découvrez les outils que vous pouvez emprunter dans votre communauté</p>
+    </div>
+
+    <div class="catalogue-toolbar">
+      <input type="text" id="searchName" placeholder="Rechercher un outil (ex: tondeuse)">
+      <input type="date" id="filterStart" aria-label="Début">
+      <input type="date" id="filterEnd" aria-label="Fin">
+      <button class="btn btn-outline" id="filterBtn">Filtrer</button>
+      <button class="btn" id="clearFilterBtn">Effacer</button>
+    </div>
+
+    <div class="tools-grid" id="catalogueGrid">
+      <div class="loader" id="catalogueLoader"></div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="section" id="how-it-works">
+    <div class="section-title">
+      <h2>Comment ça marche ?</h2>
+      <p>En quelques étapes simples, empruntez ou partagez vos outils de jardinage.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fas fa-user-plus"></i></div>
+        <h3>Inscription</h3>
+        <p>Créez votre compte en quelques minutes.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fas fa-search"></i></div>
+        <h3>Recherche</h3>
+        <p>Parcourez le catalogue ou proposez vos propres outils.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fas fa-calendar-check"></i></div>
+        <h3>Réservation</h3>
+        <p>Réservez l’outil et convenez d’un rendez-vous.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Achats collectifs -->
+  <section class="section alt" id="achats">
+    <div class="section-title">
+      <h2>Achats collectifs</h2>
+      <p>Proposez un nouvel équipement pour la communauté</p>
+    </div>
+    <div style="text-align:center;max-width:800px;margin:0 auto">
+      <p>Un équipement manque ? Proposez un achat collectif ! Si assez de membres sont intéressés, nous l’achèterons ensemble.</p>
+      <button class="btn btn-secondary">Proposer un achat collectif</button>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section class="section" id="contact">
+    <div class="section-title">
+      <h2>Contact</h2>
+      <p>Une question ? Écrivez-nous !</p>
+    </div>
+    <form id="contactForm" style="max-width:480px;margin:0 auto">
+      <div class="row"><label>Nom :</label><input type="text" id="contactName" required></div>
+      <div class="row"><label>Email :</label><input type="email" id="contactEmail" required></div>
+      <div class="row"><label>Message :</label><textarea id="contactMessage" required></textarea></div>
+      <button type="submit" class="btn btn-primary" style="width:100%">Envoyer</button>
+    </form>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-content">
+      <div class="footer-column">
+        <h3>JardinPartage</h3>
+        <p>Partagez, empruntez et cultivez ensemble dans votre communauté.</p>
+        <div class="social-links">
+          <a href="#"><i class="fab fa-facebook-f"></i></a>
+          <a href="#"><i class="fab fa-twitter"></i></a>
+          <a href="#"><i class="fab fa-instagram"></i></a>
+          <a href="#"><i class="fab fa-linkedin-in"></i></a>
+        </div>
+      </div>
+      <div class="footer-column">
+        <h3>Liens rapides</h3>
+        <ul style="list-style:none;line-height:1.9">
+          <li><a href="#">Accueil</a></li>
+          <li><a href="#catalogue">Catalogue</a></li>
+          <li><a href="#how-it-works">Comment ça marche</a></li>
+          <li><a href="#" data-open-proposer>Proposer un outil</a></li>
+          <li><a href="#achats">Achats collectifs</a></li>
+        </ul>
+      </div>
+      <div class="footer-column">
+        <h3>Communautés</h3>
+        <ul style="list-style:none;line-height:1.9">
+          <li><a href="#">Notre village</a></li>
+          <li><a href="#">Communauté de communes</a></li>
+          <li><a href="#">Devenir partenaire</a></li>
+          <li><a href="#">Événements</a></li>
+        </ul>
+      </div>
+      <div class="footer-column">
+        <h3>Contact</h3>
+        <ul style="list-style:none;line-height:1.9">
+          <li><i class="fas fa-map-marker-alt"></i> Place de la Mairie, 12345 Village</li>
+          <li><i class="fas fa-phone"></i> 01 23 45 67 89</li>
+          <li><i class="fas fa-envelope"></i> contact@jardinpartage.fr</li>
+        </ul>
+      </div>
+    </div>
+    <p style="text-align:center;margin-top:1.5rem;color:#ddd">&copy; 2023 JardinPartage. Tous droits réservés.</p>
+  </footer>
+
+  <!-- Modales -->
+  <div class="modal" id="loginModal">
+    <div class="modal-content">
+      <span class="close-modal" data-close="#loginModal">&times;</span>
+      <h2>Connexion</h2>
+      <form id="loginForm">
+        <div class="row"><label>Email</label><input type="email" id="email" required></div>
+        <div class="row"><label>Mot de passe</label><input type="password" id="password" required></div>
+        <button type="submit" class="btn btn-primary" style="width:100%">Se connecter</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="registerModal">
+    <div class="modal-content">
+      <span class="close-modal" data-close="#registerModal">&times;</span>
+      <h2>Inscription</h2>
+      <form id="registerForm">
+        <div class="row"><label>Email</label><input type="email" id="regEmail" required></div>
+        <div class="row"><label>Mot de passe</label><input type="password" id="regPassword" required></div>
+        <button type="submit" class="btn btn-primary" style="width:100%">S'inscrire</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="proposerModal">
+    <div class="modal-content">
+      <span class="close-modal" data-close="#proposerModal">&times;</span>
+      <h2>Proposer un nouvel outil</h2>
+      <form id="proposerForm">
+        <div class="row"><label>Nom de l'outil</label><input type="text" id="outilNom" required></div>
+        <div class="row"><label>Description</label><textarea id="outilDesc" required></textarea></div>
+        <div class="row"><label>Localisation</label><input type="text" id="outilLocalisation" required></div>
+        <div class="row"><label>Propriétaire</label><input type="text" id="outilProprietaire" required></div>
+        <button type="submit" class="btn btn-primary" style="width:100%">Envoyer</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="reservationModal">
+    <div class="modal-content">
+      <span class="close-modal" data-close="#reservationModal">&times;</span>
+      <h2>Réserver l'outil</h2>
+      <form id="reservationForm">
+        <div class="row"><label>Votre nom ou email</label><input type="text" id="resName" required></div>
+        <div class="row"><label>Début</label><input type="datetime-local" id="resDateDebut" required></div>
+        <div class="row"><label>Fin</label><input type="datetime-local" id="resDateFin" required></div>
+        <input type="hidden" id="resOutilId">
+        <button type="submit" class="btn btn-primary" style="width:100%">Réserver</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="detailsModal">
+    <div class="modal-content">
+      <span class="close-modal" data-close="#detailsModal">&times;</span>
+      <div id="detailsContent"></div>
+    </div>
+  </div>
+
+  <!-- Notification -->
+  <div id="notification" class="notification"></div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/fr.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Helpers
+      const notify = (msg, type='success') => {
+        const n = document.getElementById('notification');
+        n.textContent = msg; n.className = `notification ${type} show`;
+        setTimeout(()=> n.classList.remove('show'), 3200);
+      };
+      const getRandomColor = () => ['#e3f2fd','#f1f8e9','#fff8e1','#ffebee','#e8f5e9','#f9fbe7'][Math.floor(Math.random()*6)];
+      function getRandomToolIcon(){
+        const icons=['leaf','seedling','tree','tractor','spa','cloud-sun','sun','water','fan','broom','brush','wrench','hammer','gear'];
+        return icons[Math.floor(Math.random()*icons.length)];
+      }
+
+      // Modals open/close
+      const openModal = (id)=> document.querySelector(id).style.display='flex';
+      const closeModalById = (id)=> document.querySelector(id).style.display='none';
+      document.querySelectorAll('[data-open-proposer]').forEach(el=> el.addEventListener('click',(e)=>{e.preventDefault();openModal('#proposerModal')}));
+      document.querySelectorAll('.close-modal').forEach(btn=>btn.addEventListener('click',()=>closeModalById(btn.dataset.close)));
+      window.addEventListener('click',(e)=>{document.querySelectorAll('.modal').forEach(m=>{if(e.target===m)m.style.display='none'})});
+
+      // Auth buttons
+      const loginBtn=document.getElementById('loginBtn');
+      const registerBtn=document.getElementById('registerBtn');
+      const logoutBtn=document.getElementById('logoutBtn');
+      loginBtn&& (loginBtn.onclick=()=>openModal('#loginModal'));
+      registerBtn&& (registerBtn.onclick=()=>openModal('#registerModal'));
+      logoutBtn&& (logoutBtn.onclick=async()=>{await supabase.auth.signOut();notify('Déconnecté');loginBtn.style.display='inline-block';registerBtn.style.display='inline-block';logoutBtn.style.display='none'});
+
+      document.getElementById('discoverBtn')?.addEventListener('click',()=>document.getElementById('catalogue').scrollIntoView({behavior:'smooth'}));
+
+      // Auth forms
+      document.getElementById('registerForm')?.addEventListener('submit',async(e)=>{
+        e.preventDefault();
+        const email=document.getElementById('regEmail').value;
+        const password=document.getElementById('regPassword').value;
+        const {error}=await supabase.auth.signUp({email,password});
+        if(error) notify('Erreur inscription: '+error.message,'error');
+        else{notify('Inscription réussie. Vérifiez vos emails.');closeModalById('#registerModal');loginBtn.style.display='none';registerBtn.style.display='none';logoutBtn.style.display='inline-block'}
+      });
+
+      document.getElementById('loginForm')?.addEventListener('submit',async(e)=>{
+        e.preventDefault();
+        const email=document.getElementById('email').value;
+        const password=document.getElementById('password').value;
+        const {error}=await supabase.auth.signInWithPassword({email,password});
+        if(error) notify('Erreur connexion: '+error.message,'error');
+        else{notify('Connexion réussie');closeModalById('#loginModal');loginBtn.style.display='none';registerBtn.style.display='none';logoutBtn.style.display='inline-block'}
+      });
+
+      supabase.auth.getSession().then(({data})=>{
+        if(data?.session){loginBtn.style.display='none';registerBtn.style.display='none';logoutBtn.style.display='inline-block'}
+      });
+
+      // Contact
+      document.getElementById('contactForm')?.addEventListener('submit',(e)=>{e.preventDefault();notify('Merci, votre message a été envoyé !');e.target.reset()});
+
+      // Catalogue / Filtres
+      const grid=document.getElementById('catalogueGrid');
+      const loader=document.getElementById('catalogueLoader');
+      const searchName=document.getElementById('searchName');
+      const filterStart=document.getElementById('filterStart');
+      const filterEnd=document.getElementById('filterEnd');
+
+      async function getUnavailabilityMap(outils,startISO,endISO){
+        if(!startISO||!endISO||!outils?.length) return new Map();
+        const ids=outils.map(o=>o.id);
+        const {data:resas,error}=await supabase.from('reservations')
+          .select('id,outil_id,start_at,end_at').in('outil_id',ids)
+          .lt('start_at',endISO).gt('end_at',startISO);
+        if(error){console.error(error);return new Map()}
+        const map=new Map(); resas.forEach(r=>map.set(r.outil_id,true)); return map;
+      }
+
+      async function chargerCatalogue(){
+        loader.style.display='block'; grid.innerHTML='';
+        const term=searchName.value?.trim();
+        let query=supabase.from('outils').select('*').order('created_at',{ascending:false});
+        if(term) query=query.ilike('nom', `%${term}%`);
+        const {data:outils,error}=await query;
+        if(error){loader.style.display='none';notify('Erreur de chargement du catalogue','error');return}
+
+        if((!outils||!outils.length)&&term){
+          grid.innerHTML=`<div class="tool-card" style="padding:1.25rem">
+            <h3>Aucun outil « ${term} » dans le catalogue</h3>
+            <p>Souhaitez-vous le proposer à la communauté ?</p>
+            <div class="tool-actions"><button class="btn btn-secondary" data-open-proposer>Proposer un outil</button></div>
+          </div>`;
+          grid.querySelector('[data-open-proposer]')?.addEventListener('click',(e)=>{e.preventDefault();openModal('#proposerModal')});
+          loader.style.display='none'; return;
+        }
+
+        const s=filterStart.value?new Date(filterStart.value):null;
+        const e=filterEnd.value?new Date(filterEnd.value):null;
+        if((s&&!e)||(!s&&e)){notify('Merci de renseigner début et fin','error');loader.style.display='none';return}
+        if(s&&e&&s>e){notify('La date de début doit précéder la fin.','error');loader.style.display='none';return}
+        let unavailability=new Map();
+        if(s&&e){
+          const startISO=new Date(s.setHours(0,0,0,0)).toISOString();
+          const endISO=new Date(e.setHours(23,59,59,999)).toISOString();
+          unavailability=await getUnavailabilityMap(outils,startISO,endISO);
+        }
+
+        if(!outils||!outils.length){grid.innerHTML='<p style="text-align:center;width:100%">Aucun outil.</p>';loader.style.display='none';return}
+
+        for(const o of outils){
+          const isUnavailable=unavailability.get(o.id)===true;
+          const card=document.createElement('div');
+          card.className='tool-card';
+          card.innerHTML=`
+            <div class="tool-image" style="background:${getRandomColor()}"><i class="fas fa-${getRandomToolIcon()}"></i></div>
+            <div class="tool-info">
+              <h3>${o.nom}</h3>
+              <p>${o.description??''}</p>
+              <div class="tool-meta">
+                <span><i class="fas fa-user"></i> ${o.proprietaire??'—'}</span>
+                <span><i class="fas fa-map-marker-alt"></i> ${o.localisation??'—'}</span>
+              </div>
+              <div class="availability ${isUnavailable?'unavailable':'available'}">
+                ${isUnavailable?'Indisponible sur la période':(s&&e?'Disponible sur la période':'Disponibilité selon période')}
+              </div>
+              <div class="tool-actions">
+                <button class="btn btn-outline details-btn" data-id="${o.id}">Détails</button>
+                <button class="btn btn-primary reserve-btn" data-id="${o.id}" ${isUnavailable?'disabled':''}>Réserver</button>
+              </div>
+            </div>`;
+          grid.appendChild(card);
+        }
+        loader.style.display='none';
+      }
+
+      chargerCatalogue();
+      document.getElementById('filterBtn')?.addEventListener('click',e=>{e.preventDefault();chargerCatalogue()});
+      document.getElementById('clearFilterBtn')?.addEventListener('click',()=>{searchName.value='';filterStart.value='';filterEnd.value='';chargerCatalogue()});
+
+      // Détails + Réservation (FullCalendar inside)
+      let currentCalendar=null, currentOutilId=null;
+
+      async function renderOutilCalendar(outilId){
+        const container=document.getElementById('outilCalendar');
+        if(!container) return;
+        if(currentCalendar){currentCalendar.destroy();currentCalendar=null}
+
+        const {data:resas,error}=await supabase.from('reservations')
+          .select('id,start_at,end_at,reserver_par').eq('outil_id',outilId);
+        if(error){console.error(error)}
+
+        const events=(resas||[]).map(r=>({
+          id:r.id,
+          title:`Réservé${r.reserver_par?` (${r.reserver_par})`:''}`,
+          start:r.start_at,
+          end:r.end_at
+        }));
+
+        currentCalendar=new FullCalendar.Calendar(container,{
+          initialView:'dayGridMonth',
+          height:'auto',
+          locale:'fr',
+          selectable:true,
+          selectMirror:true,
+          events,
+          select:(info)=>{
+            // dayGrid: end exclusif -> on retire 1 jour pour la saisie “fin”
+            const end = new Date(info.end);
+            end.setDate(end.getDate()-1);
+            const startStr = info.startStr.slice(0,10)+'T09:00';
+            const endStr   = end.toISOString().slice(0,10)+'T18:00';
+            document.getElementById('resOutilId').value=outilId;
+            document.getElementById('resDateDebut').value=startStr;
+            document.getElementById('resDateFin').value=endStr;
+            closeModalById('#detailsModal'); openModal('#reservationModal');
+          },
+          eventClick:(arg)=>notify('Déjà réservé: '+(arg.event.title||'Réservé'))
+        });
+        currentCalendar.render();
+      }
+
+      grid.addEventListener('click', async (e)=>{
+        const btn=e.target.closest('button'); if(!btn) return;
+
+        if(btn.classList.contains('details-btn')){
+          const id=btn.dataset.id;
+          const {data:o,error}=await supabase.from('outils').select('*').eq('id',id).single();
+          if(error){notify('Erreur chargement des détails','error');return}
+          document.getElementById('detailsContent').innerHTML=`
+            <h2 style="margin-bottom:.5rem">${o.nom}</h2>
+            <p><strong>Description:</strong> ${o.description??'—'}</p>
+            <p><strong>Propriétaire:</strong> ${o.proprietaire??'—'}</p>
+            <p><strong>Localisation:</strong> ${o.localisation??'—'}</p>
+            <div class="tool-actions" style="margin:.8rem 0">
+              <button class="btn btn-primary" id="openReserveFromDetails" data-id="${o.id}">Réserver</button>
+            </div>
+            <h3 style="margin:.8rem 0">Calendrier des réservations</h3>
+            <div id="outilCalendar"></div>`;
+          openModal('#detailsModal');
+          currentOutilId=o.id;
+          renderOutilCalendar(o.id);
+
+          document.getElementById('openReserveFromDetails')?.addEventListener('click',()=>{
+            document.getElementById('resOutilId').value=o.id;
+            closeModalById('#detailsModal'); openModal('#reservationModal');
+          });
+        }
+
+        if(btn.classList.contains('reserve-btn')){
+          document.getElementById('resOutilId').value=btn.dataset.id;
+          openModal('#reservationModal');
+          if(filterStart.value) document.getElementById('resDateDebut').value=filterStart.value+'T09:00';
+          if(filterEnd.value)   document.getElementById('resDateFin').value=filterEnd.value+'T18:00';
+        }
+      });
+
+      document.getElementById('reservationForm')?.addEventListener('submit',async(e)=>{
+        e.preventDefault();
+        const outilId=document.getElementById('resOutilId').value;
+        const who=document.getElementById('resName').value;
+        const start=new Date(document.getElementById('resDateDebut').value);
+        const end=new Date(document.getElementById('resDateFin').value);
+        if(!outilId||!who||isNaN(start)||isNaN(end)||start>=end){notify('Vérifiez les informations de réservation.','error');return}
+
+        const {data:overlaps,error:errChk}=await supabase.from('reservations')
+          .select('id').eq('outil_id',outilId).lt('start_at',end.toISOString()).gt('end_at',start.toISOString());
+        if(errChk){notify('Erreur de vérification','error');return}
+        if(overlaps&&overlaps.length){notify('Période déjà réservée pour cet outil.','error');return}
+
+        const {error}=await supabase.from('reservations').insert([{
+          outil_id:outilId,reserver_par:who,start_at:start.toISOString(),end_at:end.toISOString()
+        }]);
+        if(error){notify('Erreur lors de la réservation','error');return}
+        notify('Réservation enregistrée !'); closeModalById('#reservationModal');
+        chargerCatalogue();
+        if(currentOutilId===outilId){ /* si détails ré-ouverts plus tard, on rechargera */ }
+      });
+
+      // Proposer un outil
+      document.getElementById('proposerForm')?.addEventListener('submit',async(e)=>{
+        e.preventDefault();
+        const nom=document.getElementById('outilNom').value.trim();
+        const description=document.getElementById('outilDesc').value.trim();
+        const localisation=document.getElementById('outilLocalisation').value.trim();
+        const proprietaire=document.getElementById('outilProprietaire').value.trim();
+        const {error}=await supabase.from('outils').insert([{nom,description,localisation,proprietaire}]);
+        if(error){notify('Erreur lors de la proposition: '+error.message,'error');return}
+        notify('Merci pour votre proposition !'); closeModalById('#proposerModal'); e.target.reset(); chargerCatalogue();
+      });
+    });
+  </script>
+</body>
+</html>
