@@ -153,25 +153,28 @@
     </div>
   </section>
 
-  <!-- Catalogue -->
-  <section class="catalogue" id="catalogue">
-    <div class="section-title">
-      <h2>Outils disponibles</h2>
-      <p>Filtrez par période pour voir les disponibilités exactes.</p>
-    </div>
+<!-- Catalogue -->
+<section class="catalogue" id="catalogue">
+  <div class="section-title">
+    <h2>Outils disponibles</h2>
+    <p>Filtrez par période pour voir les disponibilités exactes.</p>
+  </div>
 
-    <!-- Filtres période -->
-    <div class="date-filter">
-      <input type="datetime-local" id="filterStart" />
-      <input type="datetime-local" id="filterEnd" />
-      <button id="filterBtn" class="btn btn-outline">Filtrer</button>
-      <button id="clearFilterBtn" class="btn btn-outline">Réinitialiser</button>
-    </div>
+  <!-- Filtres période -->
+  <div class="date-filter">
+    <input type="datetime-local" id="filterStart" />
+    <input type="datetime-local" id="filterEnd" />
+    <button id="filterBtn" class="btn btn-outline">Filtrer</button>
+    <button id="clearFilterBtn" class="btn btn-outline">Réinitialiser</button>
+  </div>
 
-    <div class="tools-grid" id="catalogueGrid">
-      <div class="loader" id="catalogueLoader"></div>
-    </div>
-  </section>
+  <!-- Loader isolé (NE PAS mettre dans la grille) -->
+  <div class="loader" id="catalogueLoader" aria-live="polite"></div>
+
+  <!-- Grille -->
+  <div class="tools-grid" id="catalogueGrid"></div>
+</section>
+
 
   <!-- Achats collectifs -->
   <section class="purchase" id="achats">
