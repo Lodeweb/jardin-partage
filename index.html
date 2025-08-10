@@ -411,7 +411,7 @@
         const { data: outils, error } = await supabase
           .from('outils')
           .select('*')
-          .order('created_at', { ascending:false });
+          .order('created_at', { ascending:true });
 
         grid.innerHTML = '';
         if(error) {
